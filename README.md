@@ -105,12 +105,8 @@ Passing `--save_every` in addition to `--wav_out_path` will save the in-progress
 python generate.py --wav_out_path=generated.wav --save_every 2000 --samples 16000 model.ckpt-1000
 ```
 
-For fast generation:
-```
-python generate.py --samples 16000 model.ckpt-1000 --fast_generation=true
-```
-
-The fast generation algorithm uses the implementation from the [Fast Wavenet](https://github.com/tomlepaine/fast-wavenet) repository.
+By default, this implementation uses the fast generation algorithm from the
+[Fast Wavenet](https://github.com/tomlepaine/fast-wavenet) repository.
 You can follow the link for an explanation of how it works.
 This reduces the time needed to generate samples to a few minutes.
 
