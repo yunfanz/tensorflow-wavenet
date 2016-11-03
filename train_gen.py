@@ -16,7 +16,7 @@ import time
 
 import tensorflow as tf
 from tensorflow.python.client import timeline
-
+from dgen import DGEN 
 from wavenet import WaveNetModel, AudioReader, optimizer_factory
 
 BATCH_SIZE = 1
@@ -113,7 +113,7 @@ def save(saver, sess, logdir, step):
 
 
 def load(saver, sess, logdir):
-    print("Trying to restore saved checkpoints from {} ...".format(logdir),
+    print("Trying to restore wavenet from {} ...".format(logdir),
           end="")
 
     ckpt = tf.train.get_checkpoint_state(logdir)
@@ -133,7 +133,7 @@ def load(saver, sess, logdir):
 
 
 def get_default_logdir(logdir_root):
-    logdir = os.path.join(logdir_root, 'train', STARTED_DATESTRING)
+    logdir = os.path.join(logdir_root, 'test', STARTED_DATESTRING)
     return logdir
 
 
@@ -216,8 +216,10 @@ def main():
         args.l2_regularization_strength = None
     sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
     dgen = DGEN(sess, batch_size=1, z_dim=100, 
-                    sample_length=8000, c_dim=1, audio_params='./audio_params.json', 
-                    out_dir=None, mode='generate')
+                    sample_length=8000)
+    import IPython; IPython.embed()
+    init = tf.initialize_all_variables()
+    sess.run(init)
     audio_batch = dgen.generate()
     loss = net.loss(audio_batch, args.l2_regularization_strength)
     dgen.g_loss(loss)
@@ -234,8 +236,8 @@ def main():
 
     # Set up session
     
-    init = tf.initialize_all_variables()
-    sess.run(init)
+    #init = tf.initialize_all_variables()
+    #sess.run(init)
 
     # Saver for storing checkpoints of the model.
     wavenet_saver = tf.train.Saver(var_list=tf.trainable_variables)

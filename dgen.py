@@ -5,15 +5,13 @@ from glob import glob
 import tensorflow as tf
 import numpy as np
 import json
-from audio_reader import AudioReader
 from ops import *
 from utils import *
-from postprocess import *
 
 class DGEN(object):
     def __init__(self, sess,
-                 batch_size=1, sample_length=1024,
-                 z_dim=100, df_dim=64,
+                 batch_size=1, sample_length=1024, sample_rate=8000,
+                 z_dim=100, gf_dim=64,
                  c_dim=1, 
                  audio_params=None):
         """
@@ -33,6 +31,8 @@ class DGEN(object):
         self.sess = sess
         self.batch_size = batch_size
         self.sample_length = sample_length
+        self.output_length = sample_length
+        self.sample_rate = sample_rate
         self.z_dim = z_dim
         self.c_dim = c_dim
 
@@ -44,8 +44,6 @@ class DGEN(object):
         self.g_bn3 = batch_norm(name='g_bn3')
         self.g_bn4 = batch_norm(name='g_bn4')
 
-        self.dataset_name = dataset_name
-        self.data_dir = data_dir
         if audio_params:
             with open(audio_params, 'r') as f:
                 self.audio_params = json.load(f)
@@ -54,9 +52,9 @@ class DGEN(object):
             self.gf_dim = gf_dim
 
 
-        self.build_model(self.dataset_name)
+        self.build_model()
 
-    def build_model(self, dataset):
+    def build_model(self):
 
 
         self.z = tf.placeholder(tf.float32, [None, self.z_dim],
@@ -69,7 +67,7 @@ class DGEN(object):
 
         self.sampler = self.sampler(self.z)
 
-        self.G_sum = tf.audio_summary("G", self.G, sample_rate=self.audio_params['sample_rate'])
+        self.G_sum = tf.audio_summary("G", self.G, sample_rate=self.sample_rate)
 
         t_vars = tf.trainable_variables()
         self.g_vars = [var for var in t_vars if 'g_' in var.name]
@@ -86,7 +84,7 @@ class DGEN(object):
         #batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
          #                       .astype(np.float32)
         batch_z = np.random.uniform(-1, 1, [self.batch_size, self.z_dim]).astype(np.float32)
-        samples = self.sess.run(self.generator, feed_dict={self.z: batch_z})
+        samples = self.sess.run(self.G, feed_dict={self.z: batch_z})
         return samples
 
 
@@ -155,7 +153,7 @@ class DGEN(object):
                             self.writer.add_summary(summary_str, counter)
                             
                             save_audios(samples[0], config.out_dir+'/samples/train_'+file_str+'.wav', 
-                                format='.wav', sample_rate=self.audio_params['sample_rate'])
+                                format='.wav', sample_rate=self.sample_rate)
                         print("[Sample] g_loss: %.8f" % ( g_loss))
 
                     if np.mod(counter, 500) == 2:
