@@ -80,11 +80,12 @@ class DGEN(object):
         self.g_loss = g_loss
         self.g_loss_sum = tf.scalar_summary("g_loss", self.g_loss)
 
-    def generate(self, config):
+    def generate(self):
         '''generate samples from trained model'''
-        self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
-        batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
-                                .astype(np.float32)
+        #self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
+        #batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
+         #                       .astype(np.float32)
+        batch_z = np.random.uniform(-1, 1, [self.batch_size, self.z_dim]).astype(np.float32)
         samples = self.sess.run(self.generator, feed_dict={self.z: batch_z})
         return samples
 

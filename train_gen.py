@@ -23,7 +23,7 @@ BATCH_SIZE = 1
 DATA_DIRECTORY = './VCTK-Corpus'
 LOGDIR_ROOT = './logdir'
 CHECKPOINT_EVERY = 50
-NUM_STEPS = int(1e5)
+NUM_STEPS = int(1e2)
 LEARNING_RATE = 1e-3
 WAVENET_PARAMS = './wavenet_params.json'
 STARTED_DATESTRING = "{0:%Y-%m-%dT%H-%M-%S}".format(datetime.now())
@@ -199,23 +199,6 @@ def main():
     with open(args.wavenet_params, 'r') as f:
         wavenet_params = json.load(f)
 
-    # # Create coordinator.
-    # coord = tf.train.Coordinator()
-
-    # # Load raw waveform from VCTK corpus.
-    # with tf.name_scope('create_inputs'):
-    #     # Allow silence trimming to be skipped by specifying a threshold near
-    #     # zero.
-    #     silence_threshold = args.silence_threshold if args.silence_threshold > \
-    #                                                   EPSILON else None
-    #     reader = AudioReader(
-    #         args.data_dir,
-    #         coord,
-    #         sample_rate=wavenet_params['sample_rate'],
-    #         sample_size=args.sample_size,
-    #         silence_threshold=args.silence_threshold)
-    #     audio_batch = reader.dequeue(args.batch_size)
-
     # Create network.
     net = WaveNetModel(
         batch_size=args.batch_size,
@@ -235,13 +218,14 @@ def main():
     dgen = DGEN(sess, batch_size=1, z_dim=100, 
                     sample_length=8000, c_dim=1, audio_params='./audio_params.json', 
                     out_dir=None, mode='generate')
-    audio_batch = dgen.generate(FLAGS)
+    audio_batch = dgen.generate()
     loss = net.loss(audio_batch, args.l2_regularization_strength)
+    dgen.g_loss(loss)
 
     #trainable = tf.trainable_variables()
     #optim = optimizer.minimize(loss, var_list=trainable)
     optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
-                          .minimize(loss, var_list=dgen.g_vars)
+                          .minimize(dgen.g_loss, var_list=dgen.g_vars)
     # Set up logging for TensorBoard.
     writer = tf.train.SummaryWriter(logdir)
     writer.add_graph(tf.get_default_graph())
