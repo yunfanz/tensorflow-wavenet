@@ -74,7 +74,7 @@ class DGEN(object):
 
         self.saver = tf.train.Saver()
         
-    def g_loss(g_loss):
+    def g_loss(self, g_loss):
         self.g_loss = g_loss
         self.g_loss_sum = tf.scalar_summary("g_loss", self.g_loss)
 

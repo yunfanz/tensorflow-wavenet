@@ -19,8 +19,10 @@ from tensorflow.python.client import timeline
 from dgen import DGEN 
 from wavenet import WaveNetModel, AudioReader, optimizer_factory
 
+DGEN_LR = 0.0002
+DGEN_beta1 = 0.5
 BATCH_SIZE = 1
-DATA_DIRECTORY = './VCTK-Corpus'
+DATA_DIRECTORY = '../VCTK-Corpus'
 LOGDIR_ROOT = './logdir'
 CHECKPOINT_EVERY = 50
 NUM_STEPS = int(1e2)
@@ -217,16 +219,15 @@ def main():
     sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
     dgen = DGEN(sess, batch_size=1, z_dim=100, 
                     sample_length=8000)
-    import IPython; IPython.embed()
-    init = tf.initialize_all_variables()
-    sess.run(init)
-    audio_batch = dgen.generate()
+    #init = tf.initialize_all_variables()
+    #sess.run(init)
+    audio_batch = dgen.G
     loss = net.loss(audio_batch, args.l2_regularization_strength)
     dgen.g_loss(loss)
 
     #trainable = tf.trainable_variables()
     #optim = optimizer.minimize(loss, var_list=trainable)
-    optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
+    optim = tf.train.AdamOptimizer(DGEN_LR, DGEN_beta1) \
                           .minimize(dgen.g_loss, var_list=dgen.g_vars)
     # Set up logging for TensorBoard.
     writer = tf.train.SummaryWriter(logdir)
@@ -236,8 +237,8 @@ def main():
 
     # Set up session
     
-    #init = tf.initialize_all_variables()
-    #sess.run(init)
+    init = tf.initialize_all_variables()
+    sess.run(init)
 
     # Saver for storing checkpoints of the model.
     wavenet_saver = tf.train.Saver(var_list=tf.trainable_variables)
