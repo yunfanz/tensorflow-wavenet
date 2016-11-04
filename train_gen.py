@@ -221,10 +221,10 @@ def main():
                     sample_length=8000)
     #init = tf.initialize_all_variables()
     #sess.run(init)
-    audio_batch = dgen.G
-    loss = net.loss(audio_batch, args.l2_regularization_strength)
+    #audio_batch = dgen.G
+    loss = net.loss(dgen.G, args.l2_regularization_strength)
     dgen.g_loss(loss)
-
+    import IPython; IPython.embed()
     #trainable = tf.trainable_variables()
     #optim = optimizer.minimize(loss, var_list=trainable)
     optim = tf.train.AdamOptimizer(DGEN_LR, DGEN_beta1) \
