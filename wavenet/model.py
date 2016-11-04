@@ -522,3 +522,57 @@ class WaveNetModel(object):
                     tf.scalar_summary('total_loss', total_loss)
 
                     return total_loss
+
+
+    def scopeless_loss(self,
+             input_batch,
+             l2_regularization_strength=None):
+        '''Creates a WaveNet network and returns the autoencoding loss.
+        '''
+
+        # We mu-law encode and quantize the input audioform.
+        input_batch = mu_law_encode(input_batch,
+                                    self.quantization_channels)
+
+        encoded = self._one_hot(input_batch)
+        if self.scalar_input:
+            network_input = tf.reshape(
+                tf.cast(input_batch, tf.float32),
+                [self.batch_size, -1, 1])
+        else:
+            network_input = encoded
+
+        raw_output = self._create_network(network_input)
+
+        # Shift original input left by one sample, which means that
+        # each output sample has to predict the next input sample.
+        shifted = tf.slice(encoded, [0, 1, 0],
+                           [-1, tf.shape(encoded)[1] - 1, -1])
+        shifted = tf.pad(shifted, [[0, 0], [0, 1], [0, 0]])
+
+        prediction = tf.reshape(raw_output,
+                                [-1, self.quantization_channels])
+        loss = tf.nn.softmax_cross_entropy_with_logits(
+            prediction,
+            tf.reshape(shifted, [-1, self.quantization_channels]))
+        reduced_loss = tf.reduce_mean(loss)
+
+        tf.scalar_summary('loss', reduced_loss)
+
+        if l2_regularization_strength is None:
+            return reduced_loss
+        else:
+            # L2 regularization for all trainable parameters
+            l2_loss = tf.add_n([tf.nn.l2_loss(v)
+                                for v in tf.trainable_variables()
+                                if not('bias' in v.name)])
+
+            # Add the regularization term to the loss
+            total_loss = (reduced_loss +
+                          l2_regularization_strength * l2_loss)
+
+            tf.scalar_summary('l2_loss', l2_loss)
+            tf.scalar_summary('total_loss', total_loss)
+
+            return total_loss
+
